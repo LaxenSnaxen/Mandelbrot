@@ -1,11 +1,11 @@
 import cv2
 import numpy as np
 
-coords = []
+coords = [] # Här sparas koordinaterna som användaren klickar på
 
 
 def onMouse(event, x, y, flags, param):
-    if event == cv2.EVENT_LBUTTONDOWN:
+    if event == cv2.EVENT_LBUTTONDOWN: # Om vänster musknapp klickas
         coords.append([x, y])
         print(x, y)
 
@@ -14,9 +14,9 @@ def getComplexPlane(start, stop, num):
     # Skaffar arrays från xy arrays
     xSpace = np.linspace(start[0], stop[0], int(num[0]))
     ySpace = np.linspace(start[1], stop[1], int(num[1]))
-    # Meshgrids (vet inte vad det betyder)
+    # Meshgrids (det mellan det riktiga och komplexa nummer, en mesh av de båda)
     real, imag = np.meshgrid(xSpace, ySpace[::-1])
-    # Setting upp the komplex plane
+    # Bygger den komplexa planan
     c = np.zeros_like(real, dtype=np.cdouble)
     c.real = real
     c.imag = imag
@@ -25,11 +25,11 @@ def getComplexPlane(start, stop, num):
 
 
 def f(z, c):
-    return z**2 + c
+    return z**2 + c # beräkningen för mandelbrot
 
 
 def applyNTimes(z, c, last_n, n, escape):
-    # Apply n times
+    # Applicerar beräkningen ett antal gånger
     for _ in range(last_n, n):
         z = f(z, c)
         m = np.abs(z) < 2
@@ -42,18 +42,19 @@ def applyNTimes(z, c, last_n, n, escape):
 def colourImage(image, mod, cMap=cv2.COLORMAP_TWILIGHT_SHIFTED):
     # Get mandelbrot set
     mask = image == np.max(image)
-    # Modulo image
+    # Modulo bild
     image %= mod
     # Scale values to 8bit image and convert type
     image = (255 / (mod - 1) * image).astype(np.uint8)
-    # Colorize
+    # Färgar
     image = cv2.applyColorMap(image, cMap)
-    # Color mandelbrot set black
+    # Gör självaste mandelbrot svart
     image[mask] = [0, 0, 0]
     return image
 
 
 def textOverlay(image, center, radius, maxIter, resolution):
+    # Setup för text
     h = resolution[1]
     fontScale = h / 1300
     fontHeight = 30 * fontScale
@@ -63,6 +64,8 @@ def textOverlay(image, center, radius, maxIter, resolution):
         r = [np.format_float_scientific(x, 3, trim="-") for x in radius]
     else:
         r = np.around(radius, 3)
+
+    # Lägger till text
     image = cv2.putText(
         image,
         (
@@ -79,6 +82,7 @@ def textOverlay(image, center, radius, maxIter, resolution):
 
 
 def reCenter(coords, c):
+    # Ändrar vart centern bilden är, beroende på var användaren klickar
     cPoint = c[coords[-1][1], coords[-1][0]]
 
     center[0] = cPoint.real
@@ -90,6 +94,7 @@ def reCenter(coords, c):
 
 
 def zoomIn(radius):
+    # Zoomar in
     radius /= 2
     start = center - radius
     stop = center + radius
@@ -98,6 +103,7 @@ def zoomIn(radius):
 
 
 def zoomOut(radius):
+    # Zoomar ut
     radius *= 2
     start = center - radius
     stop = center + radius
@@ -106,18 +112,21 @@ def zoomOut(radius):
 
 
 def maxIterUp(maxIter):
+    # Ökar maxiter, vilket ger mer detalj
     lastMaxIter = maxIter
     maxIter *= 2
     return lastMaxIter, maxIter
 
 
 def maxIterDown(maxIter):
+    # Minskar maxiter, vilket ger mindre detalj
     lastMaxIter = 0
     maxIter //= 2
     return lastMaxIter, maxIter
 
 
 def saveImage(image, start, stop):
+    # Sparar bilden som en png
     xStr = f"{str(start[0]).replace('.','_')}-{str(stop[0]).replace('.','_')}"
     yStr = f"{str(start[1]).replace('.','_')}-{str(stop[1]).replace('.','_')}"
 
@@ -126,18 +135,21 @@ def saveImage(image, start, stop):
 
 
 def rollcMap(cMap):
+    # Ändrar färg karta
     cMap += 1
     cMap %= 22
     return cMap
 
 
 def resolutionUp(k, aspecRatio):
+    # Ökar resolutionen
     k = int(k * 1.2)
     resolution = np.array([aspectRatio * k, k], dtype=int)
     return k, resolution
 
 
 def resolutionDown(k, aspectRatio):
+    # Sänker resolutionen
     k = int(k / 1.2)
     resolution = np.array([aspectRatio * k, k], dtype=int)
     return k, resolution
